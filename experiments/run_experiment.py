@@ -1,3 +1,27 @@
+def run_training_episode(env, maddpg):
+    state, _ = env.reset()
+    done = False
+
+    while not done:
+        obs_list = [
+            torch.FloatTensor(state).unsqueeze(0)
+            for _ in range(maddpg.num_agents)
+        ]
+
+        actions = maddpg.select_actions(obs_list)
+        next_state, reward, terminated, truncated, _ = env.step(
+            actions.detach().numpy()
+        )
+
+        maddpg.replay_buffer.push(
+            state, actions.detach().numpy(), reward, next_state
+        )
+
+        maddpg.update(batch_size=32)
+
+        state = next_state
+        done = terminated or truncated
+
 import torch
 from envs.urban_env import UrbanEpidemicEnv
 from marl.maddpg import MADDPG
